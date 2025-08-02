@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ultimate Economy Simulator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --primary: #2255aa;
+      --accent: #ffaa22;
+      --bg: #f4f8fd;
+      --surface: #fff;
+      --border: #dde4ef;
+    }
+    body {
+      margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: #133552;
+      min-height: 100vh;
+    }
+    .app-container {
+      max-width: 850px;
+      margin: 36px auto 36px auto;
+      background: var(--surface);
+      border-radius: 1.1em;
+      box-shadow: 0 2px 18px #ccdaef99;
+      padding: 32px 22px;
+      min-height: 650px;
+    }
+    h1 {
+      text-align: center;
+      color: var(--primary);
+      letter-spacing: 0.04em;
+    }
+    nav {
+      display: flex;
+      gap: 0;
+      justify-content: center;
+      border-radius: 0.7em 0.7em 0 0;
+      overflow: hidden;
+      margin-bottom: 22px;
+      background: var(--bg);
+      box-shadow: 0 1px 0 var(--border);
+    }
+    nav button {
+      flex: 1 1 0;
+      padding: 13px 0;
+      font-size: 1.08em;
+      border: none;
+      background: none;
+      color: var(--primary);
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    nav button.active {
+      background: var(--surface);
+      color: var(--accent);
+      font-weight: bold;
+      border-bottom: 2px solid var(--accent);
+    }
+    .section { display: none;}
+    .section.active { display: block;}
+    .statbox {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(163px,1fr));
+      gap: 1.1em;
+      margin-bottom: 20px;
+    }
+    .stat {
+      background: var(--bg);
+      border-radius: 0.6em;
+      padding: 16px 12px;
+      line-height: 1.6;
+      font-weight: 500;
+      box-shadow: 0 1px 3px #c5d8ed1b;
+      border: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      margin-bottom: 10px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 7px 7px;
+      text-align: left;
+      font-size: 1em;
+    }
+    th { background: #e7eefb; color: var(--primary);}
+    td button {
+      padding: 3px 9px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.96em;
+      transition: background 0.21s;
+    }
+    td button:disabled { background: #999; cursor: not-allowed;}
+    .property-card { 
+      background: var(--bg);
+      border-radius: 0.5em;
+      padding: 7px 11px 7px 16px;
+      margin-bottom: 7px;
+      border-left: 4px solid var(--primary);
+      color: #224;
+      font-size: 1em;
+    }
+    .business-card {
+      background: #fffbe5;
+      border-radius: 0.5em;
+      border-left: 4px solid var(--accent);
+      padding: 7px 12px 6px 16px;
+      margin-bottom: 5px;
+      color: #763c11;
+      font-size: 1em;
+    }
+    .event {
+      font-size: 1em;
+      padding: 9px 11px;
+      margin: 7px 0 0 0;
+      background: #eef4fd;
+      border-left: 3px solid var(--primary);
+      border-radius: 0.3em;
+    }
+    .analytics-table th, .analytics-table td { font-size: .98em;}
+    .controls {
+      margin: 9px 0 15px 0;
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .controls button {
+      padding: 7px 15px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      font-size: 1em;
+      border-radius: 0.5em;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.17s;
+    }
+    .controls button:active { background: #194278;}
+    .note {
+      font-size: 0.96em; margin: 8px 0; color: #444;
+    }
+    @media (max-width: 600px) {
+      .app-container { padding: 10px 2vw;}
+      table th,table td {padding:4px 4px;font-size:.92em;}
+      h1 {font-size: 1.17em;}
+      .stat {font-size:.97em;}
+    }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  <h1>Ultimate Economy Simulator</h1>
+  <nav id="nav">
+    <button onclick="setTab(0)">Dashboard</button>
+    <button onclick="setTab(1)">Jobs & Business</button>
+    <button onclick="setTab(2)">Marketplace</button>
+    <button onclick="setTab(3)">Properties</button>
+    <button onclick="setTab(4)">Invest/Bank</button>
+    <button onclick="setTab(5)">Events</button>
+    <button onclick="setTab(6)">Analytics</button>
+  </nav>
+  <div id="sections">
+    <div class="section" id="dashboard"></div>
+    <div class="section" id="jobs"></div>
+    <div class="section" id="market"></div>
+    <div class="section" id="property"></div>
+    <div class="section" id="bank"></div>
+    <div class="section" id="events"></div>
+    <div class="section" id="analytics"></div>
+  </div>
+</div>
+<script>
+let player = {
+  name: "Player",
+  cash: 4000,
+  salary: 440,
+  job: "Office Clerk",
+  jobLevel: 1,
+  business: null,
+  businessProfit: 0,
+  businesses: [],
+  properties: [],
+  rentIncome: 0,
+  stocks: 0,
+  stockValue: 0,
+  loan: 0,
+  turn: 1,
+  eventLog: [],
+  analytics: [],
+};
+
+let jobs = [
+  { name: "Office Clerk", salary: 440 },
+  { name: "Sales Rep", salary: 600 },
+  { name: "Engineer", salary: 900 },
+  { name: "Consultant", salary: 1300 },
+  { name: "Manager", salary: 1750 },
+  { name: "Director", salary: 2200 }
+];
+
+let businesses = [
+  { name: "Food Cart", cost: 1600, profit: 180 },
+  { name: "Bookshop", cost: 3500, profit: 330 },
+  { name: "Delivery Startup", cost: 6900, profit: 700 },
+  { name: "App Platform", cost: 12500, profit: 1500 }
+];
+
+let businessUpgrades = [
+  { name: "Hire Staff", cost: 900, profitBoost: 0.22 },
+  { name: "New Equipment", cost: 1300, profitBoost: 0.33 }
+];
+
+let properties = [
+  { name: "Micro Apartment", price: 2600, rent: 95 },
+  { name: "Premium Flat", price: 10000, rent: 390 },
+  { name: "Downtown Office", price: 22000, rent: 850 }
+];
+
+let stockFundBase = { name: "Stock Fund", price: 1000, value: 1000 };
+let stocks = [];
+
+let eventsList = [
+  () => { let v = 120; player.cash += v; logEvent(`Windfall! Received a surprise gift of $${v}.`); },
+  () => { let v = 90; player.cash -= v; logEvent("Unexpected costs! Repairs and bills (-$90)."); },
+  () => { let d = 95; player.salary += d; logEvent(`Promotion! Salary increased by $${d}.`); },
+  () => { let d = -Math.floor(player.salary*0.18); player.salary += d; logEvent(`Pay-cut: Salary reduced by $${-d}.`); },
+  () => { let l = 320; player.loan += l; player.cash += l; logEvent("Needed emergency loan ($320)."); },
+  () => { if(player.stocks>0){let s = Math.floor(player.stocks*0.09); player.stockValue -= s; logEvent(`Market downturn: investments lost $${s}.`); }},
+  () => { if(player.properties.length){let p = player.properties[0]; p.rent=Math.max(0,p.rent-30); logEvent("Rental market dip: property rent fell this turn."); }},
+  () => { player.cash += 55; logEvent("Received grant/subsidy ($55) from government."); }
+];
+
+function logEvent(msg) {
+  player.eventLog.unshift({ txt: msg, turn: player.turn });
+}
+
+function nextTurn() {
+  // Base earnings 
+  player.cash += player.salary;
+  logEvent(`Salary credited: $${player.salary}`);
+
+  // Business profit
+  let bprofit = 0;
+  if(player.businesses.length>0){
+    player.businesses.forEach(biz=>{
+      player.cash += biz.profit;
+      bprofit+= biz.profit;
+    });
+    if(bprofit) logEvent(`Business profit: +$${bprofit}`);
+  }
+
+  // Rental income
+  let rent = 0;
+  player.properties.forEach(p=>{rent+=p.rent;});
+  if(rent){
+    player.cash += rent;
+    logEvent(`Rental income: +$${rent}`);
+  }
+
+  // Stock value change
+  if(stocks.length>0){
+    let c = 0;
+    stocks.forEach(s=>{
+      let diff = Math.round(s.value * (0.018 + Math.random()*0.032));
+      s.value += diff;
+      c+=diff;
+    });
+    player.stockValue+=c;
+    if(c) logEvent(`Stock/ETF investment gained: +$${c}`);
+  }
+
+  // Interest
+  let interest = Math.floor(player.cash * 0.0018);
+  if(interest>0){player.cash += interest;logEvent(`Interest: +$${interest}`);}
+  
+  // Small gov benefit every 4 turns
+  if(player.turn % 4===0) { player.cash+=90; logEvent("Government bonus: +$90"); }
+
+  // Loan payment
+  if(player.loan>0){
+    let pay = Math.min(70,player.loan,player.cash);
+    player.cash -= pay;
+    player.loan -= pay;
+    logEvent(`Paid $${pay} loan (remaining: $${player.loan}).`);
+  }
+
+  // Expenses
+  let expense = Math.floor(140 + Math.random()*110);
+  player.cash -= expense;
+  logEvent(`Daily life expenses: -$${expense}`);
+  
+  // Random event
+  if(Math.random()<0.35) {
+    let ev = eventsList[Math.floor(Math.random()*eventsList.length)];
+    ev();
+  }
+
+  // Analytics save
+  player.analytics.push({
+    turn: player.turn,
+    cash: player.cash,
+    salary: player.salary,
+    business: player.businesses.length?player.businesses.map(b=>b.name).join(', '):'',
+    bprofit: bprofit,
+    rent: rent,
+    loan: player.loan,
+    stocks: stocks.reduce((acc,stk)=>acc+stk.value,0)
+  });
+
+  player.turn++;
+  render();
+}
+
+function buyBusiness(idx) {
+  let biz = businesses[idx];
+  if(player.cash>=biz.cost && !player.businesses.includes(biz)){
+    player.cash-=biz.cost;
+    player.businesses.push({...biz});
+    logEvent(`Started business: ${biz.name} ($${biz.profit}/turn)`);
+    render();
+  }
+}
+function upgradeBusiness(idx) {
+  let upgrade = businessUpgrades[idx];
+  let biz = player.businesses[0];
+  if(biz && !biz[upgrade.name] && player.cash>=upgrade.cost){
+    player.cash -= upgrade.cost;
+    biz.profit = Math.floor(biz.profit*(1+upgrade.profitBoost));
+    biz[upgrade.name] = true;
+    logEvent(`Business upgraded: ${upgrade.name}`);
+    render();
+  }
+}
+function buyProperty(idx) {
+  let prop = properties[idx];
+  if(player.cash>=prop.price && !player.properties.includes(prop)){
+    player.cash-=prop.price;
+    player.properties.push({...prop});
+    logEvent(`Bought property: ${prop.name}`);
+    render();
+  }
+}
+function newJob() {
+  let curIdx = jobs.findIndex(j=>j.salary===player.salary);
+  if(curIdx<jobs.length-1) {
+    let nxt = jobs[curIdx+1];
+    player.job = nxt.name;
+    player.salary = nxt.salary;
+    logEvent(`New job: ${nxt.name}`);
+    render();
+  }
+}
+function investStock() {
+  if(player.cash>=stockFundBase.price){
+    player.cash -= stockFundBase.price;
+    let st = { name:"ETF", value: stockFundBase.price };
+    stocks.push(st);
+    player.stocks += stockFundBase.price;
+    player.stockValue += stockFundBase.price;
+    logEvent(`Invested $${stockFundBase.price} in stocks/ETF.`);
+    render();
+  }
+}
+function takeLoan() {
+  if(player.loan<8000) {
+    player.cash+=1000;
+    player.loan+=1000;
+    logEvent("Loan taken: $1000. (Interest applies)");
+    render();
+  }
+}
+function repayLoan() {
+  let amt = Math.min(player.loan,player.cash);
+  if(player.loan > 0 && amt > 0){
+    player.cash -= amt;
+    logEvent(`Loan repaid: $${amt}.`);
+    player.loan -= amt;
+    render();
+  }
+}
+
+function setTab(idx){
+  let tabs = document.querySelectorAll("nav button");
+  let secs = document.querySelectorAll(".section");
+  tabs.forEach((t,i)=>t.classList.toggle("active",i===idx));
+  secs.forEach((d,i)=>d.classList.toggle("active",i===idx));
+  // Render current when switching
+  render();
+}
+function render(){
+  // Dashboard
+  document.getElementById("dashboard").innerHTML = `
+    <div class="statbox">
+      <div class="stat"><b>Turn:</b> ${player.turn}</div>
+      <div class="stat"><b>Cash:</b> $${player.cash}</div>
+      <div class="stat"><b>Job:</b> ${player.job} <br/>($${player.salary}/turn)</div>
+      <div class="stat"><b>Rental Income:</b> $${player.properties.reduce((a,b)=>a+b.rent,0)}/turn</div>
+      <div class="stat"><b>Business(es):</b> ${player.businesses.length?player.businesses.map(b=>b.name).join(', '):'<i>None</i>'}</div>
+      <div class="stat"><b>Investment Value:</b> $${stocks.length?stocks.reduce((a,s)=>a+s.value,0):0}
+        <br/><span style="font-size:.93em;">(${stocks.length} holding)</span></div>
+      <div class="stat"><b>Loan:</b> $${player.loan}</div>
+    </div>
+    <div class="controls">
+      <button onclick="nextTurn()">⏭ Next Turn</button>
+      <button onclick="takeLoan()">Take $1000 Loan</button>
+      <button onclick="repayLoan()" ${player.loan==0?"disabled":""}>Repay Loan</button>
+    </div>
+    <div>
+      <b>Recent Events</b>
+      ${player.eventLog.slice(0,4).map(e=>`<div class="event"><b>T${e.turn}:</b> ${e.txt}</div>`).join("")}
+    </div>
+  `;
+
+  // Jobs & Business
+  let jobIdx = jobs.findIndex(j=>j.salary===player.salary);
+  let canPromote = jobIdx < jobs.length-1;
+  document.getElementById("jobs").innerHTML = `
+    <div class="statbox">
+      <div class="stat"><b>Current Job</b>:<br/> ${player.job}<br/>(Salary: $${player.salary}/turn)</div>
+      <div class="stat"><b>Business Owned:</b><br/>${player.businesses.length?player.businesses.map(b=>b.name).join(', '): '<i>None</i>'}</div>
+    </div>
+    <div style="margin-bottom:7px;">
+      <button onclick="newJob()" ${canPromote?"":"disabled"}>🎓 Apply for Promotion</button>
+      <span class="note">${canPromote?`Next: ${jobs[jobIdx+1].name} ($${jobs[jobIdx+1].salary}/turn)`:"Max Level!"}</span>
+    </div>
+    <b>Start New Business</b>
+      ${businesses.map((b,i)=>
+        `<div class="business-card">
+            <b>${b.name}</b> — Cost: $${b.cost} / Profit: $${b.profit}/turn
+            <button onclick="buyBusiness(${i})" ${player.cash<b.cost||player.businesses.includes(b)?"disabled":""}>Start</button>
+        </div>`
+      ).join("")}
+    <div class="note">Upgrade business in extended version.
+    </div>
+  `;
+
+  // Market
+  document.getElementById("market").innerHTML = `
+    <b>Stock & ETF Fund</b>
+    <table>
+      <tr><th>Name</th><th>Unit Price</th><th>Buy</th></tr>
+      <tr>
+        <td>${stockFundBase.name}</td>
+        <td>$${stockFundBase.price}</td>
+        <td><button onclick="investStock()" ${player.cash<stockFundBase.price?"disabled":""}>Invest</button></td>
+      </tr>
+    </table>
+    <span class="note">Invest for passive growth. Price/value shifts per turn.</span>
+  `;
+
+  // Properties
+  let owned = player.properties;
+  let avail = properties.filter(p=>!owned.find(q=>q.name===p.name));
+  document.getElementById("property").innerHTML = `
+    <b>Owned Properties</b>
+    ${owned.length?owned.map(p=>`
+      <div class="property-card">
+        <b>${p.name}</b> — Value: $${p.price}, Rent: $${p.rent}/turn
+      </div>
+      `).join(""):'<div class="property-card"><i>None</i></div>'}
+      <b>Available</b>
+      ${avail.length?avail.map((p,idx)=>`
+        <div class="property-card">
+          <b>${p.name}</b> — Price: $${p.price}, Rent: $${p.rent}/turn
+          <button onclick="buyProperty(${idx})" ${player.cash<p.price?"disabled":""}>Buy</button>
+        </div>
+      `).join(""):'<div class="property-card">No more properties for sale</div>'}
+    <span class="note">Property rents credited each turn. Slump/boom events are simulated.
+    </span>
+  `;
+
+  // Bank/Invest
+  document.getElementById("bank").innerHTML = `
+    <div class="statbox">
+      <div class="stat"><b>Cash:</b> $${player.cash}</div>
+      <div class="stat"><b>Investments</b>: $${stocks.reduce((a,s)=>a+s.value,0)}<br/>(${stocks.length} ETFs/holdings)</div>
+      <div class="stat"><b>Loan</b>: $${player.loan}</div>
+    </div>
+    <div class="controls">
+      <button onclick="investStock()" ${player.cash<stockFundBase.price?"disabled":""}>Invest $1000 in Stock/ETF</button>
+      <button onclick="repayLoan()" ${player.loan==0?"disabled":""}>Repay Loan</button>
+    </div>
+    <span class="note">Interest/minimum loan repayment auto-applied each turn. Large loans may risk insolvency!</span>
+  `;
+
+  // Events
+  document.getElementById("events").innerHTML =
+    `<b>Event Log (recent turn first)</b><br>`+
+    player.eventLog.slice(0,18).map(e=>(
+      `<div class="event"><b>T${e.turn}:</b> ${e.txt}</div>`
+    )).join("");
+
+  // Analytics
+  let hist = player.analytics.slice(-16); // limit for mobile
+  document.getElementById("analytics").innerHTML = `
+    <b>Progress by Turn</b>
+    <div style="overflow:auto;">
+    <table class="analytics-table">
+      <tr>
+        <th>Turn</th><th>Cash</th><th>Salary</th>
+        <th>Business</th><th>B.Profit</th><th>Rental</th><th>Loan</th><th>Investments</th>
+      </tr>
+      ${hist.map(r=>
+        `<tr>
+          <td>${r.turn}</td>
+          <td>$${r.cash}</td>
+          <td>$${r.salary}</td>
+          <td>${r.business}</td>
+          <td>$${r.bprofit}</td>
+          <td>$${r.rent}</td>
+          <td>$${r.loan}</td>
+          <td>$${r.stocks}</td>
+        </tr>`
+      ).join("")}
+    </table></div>
+    <div class="note">Strategy tip: Try investing, property, and business for diverse income.</div>
+  `;
+}
+
+setTab(0);
+render();
+</script>
+</body>
+</html>
